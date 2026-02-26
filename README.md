@@ -40,6 +40,7 @@ export TOKEN_MCP_CLIENTE="seu_token_aqui"
 O servidor carrega a especificação OpenAPI da PetStore e a expõe via MCP.
 ```bash
 fastmcp run servidor.py:mcp --transport http
+fastmcp run servidor.py:mcp --transport sse --reload
 ```
 
 ### Passo 2: Iniciar o Cliente Interativo
