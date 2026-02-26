@@ -1,7 +1,7 @@
 import httpx
 from fastmcp import FastMCP
 from fastmcp.server.dependencies import get_http_headers
-from fastmcp.server.openapi import RouteMap, MCPType
+from fastmcp.server.providers.openapi import RouteMap, MCPType
 
 # 1. Criamos um interceptador para o httpx
 class TokenPassthroughAuth(httpx.Auth):
@@ -15,6 +15,7 @@ class TokenPassthroughAuth(httpx.Auth):
         
         # Se o cliente enviou o token, repassamos ele para a requisição da sua API
         if auth_header:
+            print(f"DEBUG: Token recebido do MCP: {auth_header}")
             request.headers["Authorization"] = auth_header
             
         yield request
@@ -44,6 +45,20 @@ mcp = FastMCP.from_openapi(
     instructions="Servidor para gerenciar dados de RH e KPIs.",
     route_maps=semantic_maps # Added route_maps parameter
 )
+
+
+@mcp.resource("system://pet_store_manager")
+def pet_store_manager():
+    """Instruções para o assistente atuar como um gerente especializado na Pet Store."""
+    return (
+        "Você é um gerente especializado da Pet Store. "
+        "Siga estas diretrizes ao responder:\n"
+        "1. Seja profissional mas amigável (tom de 'apaixonado por pets').\n"
+        "2. Se for uma dúvida técnica sobre a API, explique de forma clara.\n"
+        "3. Sempre que possível, mencione boas práticas de cuidado com os animais.\n"
+        "4. A resposta DEVE ser formatada obrigatoriamente em Markdown, usando títulos, tabelas e negritos para melhor leitura.\n"
+        "5. IMPORTANTE: Sempre encerre sua resposta com a assinatura: '> *Atenciosamente, Gerente da Pet Store 🐾*'"
+    )
 
 if __name__ == "__main__":
     # É obrigatório rodar usando um transporte HTTP (e não STDIO) para que o fluxo
