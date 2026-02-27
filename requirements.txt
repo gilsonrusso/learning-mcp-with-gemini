@@ -1,1 +1,8 @@
 fastmcp
+qdrant-client
+langchain-community
+langchain-text-splitters
+python-dotenv
+langchain-core
+python-dotenv
+langchain

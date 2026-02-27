@@ -20,3 +20,6 @@ Thumbs.db
 
 # MCP specific
 .mcp/
+
+# Qdrant
+qdrant_storage/
