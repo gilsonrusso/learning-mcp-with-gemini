@@ -1,9 +1,11 @@
 import os
 
 import dotenv
+from langchain_community.document_loaders import PyPDFLoader
 from langchain_ollama import OllamaEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
 
@@ -13,20 +15,20 @@ URL_QDRANT = os.getenv("URL_QDRANT", "http://localhost:6333")
 NOME_COLECAO = os.getenv("NOME_COLECAO", "documentacao_teste")
 MODEL_EMBEDDING = os.getenv("MODEL_EMBEDDING", "nomic-embed-text:v1.5")
 
-# 1. Simulando a sua documentação
-texto_documentacao = """
-O Model Context Protocol (MCP) é um padrão aberto que conecta modelos de IA a fontes de dados.
-Ele funciona como um USB-C para IA, padronizando a comunicação entre clientes e servidores.
+file_path = "./100_historias_infantis.pdf"
+loader = PyPDFLoader(file_path)
+docs = loader.load()
 
-O FastMCP é um framework Python maravilhoso. Ele permite criar servidores MCP rapidamente.
-Usando decoradores simples, podemos transformar funções Python em ferramentas e recursos para a IA.
-"""
+print(f"::: {docs[0].page_content[:200]}\n")
+print(f"::: {docs[0].metadata}\n")
+print(f"::: {len(docs)}\n")
 
 text_splitter = RecursiveCharacterTextSplitter(
     length_function=len,  # Função que calcula o tamanho do texto
     is_separator_regex=False,  # Se o separador é uma expressão regular
-    chunk_size=100,  # Tamanho máximo de cada pedaço (em caracteres)
-    chunk_overlap=20,  # Quantos caracteres ele pega 'emprestado' do pedaço anterior
+    chunk_size=1000,  # Tamanho máximo de cada pedaço (em caracteres)
+    chunk_overlap=200,  # Quantos caracteres ele pega 'emprestado' do pedaço anterior
+    add_start_index=True,
     separators=[
         "\n\n",
         "\n",
@@ -37,8 +39,8 @@ text_splitter = RecursiveCharacterTextSplitter(
 )
 
 # 2. Dividindo o texto
-pedaços = text_splitter.split_text(texto_documentacao)
-print(f"Texto dividido em {len(pedaços)} chunks. Gerando embeddings...")
+all_splits = text_splitter.split_documents(docs)
+print(f"Texto dividido em {len(all_splits)} chunks. Gerando embeddings...")
 
 # 4. Configurando o modelo de Embeddings
 # Embeddings são representações numéricas (vetoriais) do texto.
@@ -80,7 +82,7 @@ vectorstore = QdrantVectorStore(
 # 9. Adicionando os textos ao banco
 # Aqui a mágica acontece! Esse comando pega todos os seus 'pedaços' de texto, envia
 # para o Ollama converter em números (embeddings), e salva tudo lá na coleção do Qdrant.
-vectorstore.add_texts(texts=pedaços)
+vectorstore.add_documents(documents=all_splits)
 print("✅ Tudo salvo no Qdrant com sucesso!\n")
 
 # 10. Fazendo a busca (Retrieval)
@@ -89,7 +91,7 @@ print("✅ Tudo salvo no Qdrant com sucesso!\n")
 # quais vetores (documentos) estão matematicamente mais 'próximos' (Distance.COSINE) do vetor da pergunta.
 # O 'k=2' diz para ele retornar os 2 melhores resultados.
 print("🔍 Fazendo uma busca por similaridade...")
-resultados = vectorstore.similarity_search("O que é MCP?", k=2)
+resultados = vectorstore.similarity_search("Quem usava um macacão azul?", k=2)
 
 print("\n--- Resultados Encontrados ---")
 for i, doc in enumerate(resultados):
